@@ -1,30 +1,59 @@
-const fetchApiGithub = async (username) => {
-    const url = `https://api.github.com/users/${username}/events`;
-    const response = await fetch(url);
-    const data = await response.json();
-    return data;
+async function fetchGithubActivity(username) {
+    const response = await fetch(`https://api.github.com/users/${username}/events`);
+    if (!response.ok) {
+        if (response.status === 404) {
+            throw new Error('User not found');
+        }
+        else {
+            throw new Error('Failed to fetch data from GitHub API: ' + response.statusText);
+        }
+    }
+     return response.json();
 }
 
-const username = process.argv[2];
-console.log(`fetching data from ${username}....`);
-fetchApiGithub(username)
-    .then(data => {
-        console.log
-        if (!data.length) {
-            console.log('No data available for this user.');
-            return; // Termina la ejecución si no hay datos
-        }
-        
-        console.log(`First event date: ${data[0].created_at}`);
+function displayActivity(events){
+    if (events.length === 0) {
+        console.log('No recent activity found for this user.');
+        return;
+    }
 
-        data.forEach(element => {
-            console.log(`Type: ${element.type}`);
-            console.log(`Repo: ${element.repo.name}`);
-            console.log(`Date: ${element.created_at}`);
-            console.log(`last commit message: ${element.payload.commits ? element.payload.commits[0].message : 'No message'}`);
-            console.log('---------------------------------');
-        });
-    })
-    .catch(error => {
-        console.error(error);
+    events.forEach(event => {
+        let action;
+        switch (event.type) {
+            // case "PushEvent":
+            //     const commitCount = event.payload.commits.length;
+            //     action = `pushed ${commitCount} commit${commitCount > 1 ? 's' : ''} to ${event.repo.name}`;
+            //     break;
+            case "IssuesEvent":
+                action = `${event.payload.action} an issue in ${event.repo.name}`;
+                break;
+            case "WatchEvent":
+                action = `starred ${event.repo.name}`;
+                break;
+            case "ForkEvent":
+                action = `forked ${event.repo.name}`;
+                break;
+            case "CreateEvent":
+                action = `created ${event.payload.ref_type} ${event.payload.ref} in ${event.repo.name}`;
+                break;
+            default:
+                action = `performed ${event.type} in ${event.repo.name}`;
+                break;
+        }
+        console.log(action);
     });
+}
+    const username = process.argv[2];
+    if (!username) {
+        console.error('Please provide a GitHub username as an argument.');
+        process.exit(1);
+    }
+
+    fetchGithubActivity(username)
+        .then((events) => {
+            displayActivity(events);
+        })
+        .catch((error) => {
+            console.error('Error:', error.message);
+            process.exit(1);
+        });
