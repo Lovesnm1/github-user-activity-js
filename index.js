@@ -19,10 +19,11 @@ function displayActivity(events){
 
     events.forEach(event => {
         let action;
+        console.log(event.payload);
         switch (event.type) {
             case "PushEvent":
-                const commitCount = event.payload?.commits?.length || 0;
-                action = `pushed ${commitCount} commit${commitCount > 1 ? 's' : ''} to ${event.repo.name}`;
+                
+
                 break;
             case "IssuesEvent":
                 action = `${event.payload.action} an issue in ${event.repo.name}`;
@@ -40,7 +41,7 @@ function displayActivity(events){
                 action = `performed ${event.type} in ${event.repo.name}`;
                 break;
         }
-        console.log(action);
+        console.log(`- ${action}`);
     });
 }
     const username = process.argv[2];
