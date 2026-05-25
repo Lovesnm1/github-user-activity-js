@@ -11,38 +11,49 @@ async function fetchGithubActivity(username) {
      return response.json();
 }
 
-function displayActivity(events){
+async function displayActivity(events) {
+
     if (events.length === 0) {
-        console.log('No recent activity found for this user.');
+        console.log(
+          'No recent activity found for this user.'
+        );
         return;
     }
 
-    events.forEach(event => {
-        let action;
-        console.log(event.payload);
-        switch (event.type) {
-            case "PushEvent":
-                
+    for (const element of events) {
+            console.log(`Type: ${element.type}`);
+            console.log(`Repo: ${element.repo.name}`);
+            console.log(`Date: ${element.created_at}`);
+            if (element.type === 'PushEvent') {
+                const repoName = element.repo.name;
 
-                break;
-            case "IssuesEvent":
-                action = `${event.payload.action} an issue in ${event.repo.name}`;
-                break;
-            case "WatchEvent":
-                action = `starred ${event.repo.name}`;
-                break;
-            case "ForkEvent":
-                action = `forked ${event.repo.name}`;
-                break;
-            case "CreateEvent":
-                action = `created ${event.payload.ref_type} ${event.payload.ref} in ${event.repo.name}`;
-                break;
-            default:
-                action = `performed ${event.type} in ${event.repo.name}`;
-                break;
-        }
-        console.log(`- ${action}`);
-    });
+                const before =
+                    element.payload.before;
+
+                const head =
+                    element.payload.head;
+
+                const url =
+                  `https://api.github.com/repos/${repoName}/compare/${before}...${head}`;
+
+                const response =
+                    await fetch(url);
+
+                const data =
+                    await response.json();
+
+                const commitCount =
+                    data.total_commits || 0;
+                console.log(`pushed: ${commitCount}`);
+
+                for (let i = 0; i < commitCount; i++) {
+                    const message =
+                        data.commits[i].commit.message;
+                    console.log(`- Commit ${i + 1}: ${message}`);
+                }
+            }
+            console.log('---------------------------------');
+        };
 }
     const username = process.argv[2];
     if (!username) {
